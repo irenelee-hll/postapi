@@ -1,0 +1,44 @@
+process.env.NODE_ENV = 'test';
+const BlogPost = require('../app/models/blogpost.model');
+const server = require('../server');
+const chai = require('chai');
+const expect = chai.expect;
+const chaiHttp = require('chai-http');
+chai.use(chaiHttp);
+const blogURL = '/api/blogposts';
+
+
+describe('Blog Posts', () => {
+  beforeEach(done => {
+    BlogPost.remove({}, err => {
+      if(err) console.error(err);
+      done();
+    });
+  });
+  describe('/POST/ - publish a BlogPost', () => {
+    it('it should POST a new BlogPost', done => {
+      const NewBlogPost = {
+        url: 'my-first-blog-post',
+        title: 'My First Blog Post',
+        body: 'This is some text. Lorem ipsum... etc...',
+        tags: ['blog', 'nodejs', 'api']
+      };
+      chai.request(server)
+          .post(blogURL)
+          .send(NewBlogPost)
+          .end((err, res) => {
+            expect(res).to.have.status(200);
+            expect(res.body).to.be.an('object');
+            expect(res.body).to.have.property('msg')
+              .eql('Successfully published blog post.');
+            expect(res.body).to.have.property('blogPost');
+            expect(res.body.blogPost).to.have.property('url').and.be.an('string').eql(NewBlogPost.url);
+            expect(res.body.blogPost).to.have.property('title').and.be.an('string').eql(NewBlogPost.title);
+            expect(res.body.blogPost).to.have.property('body').and.be.an('string').eql(NewBlogPost.body);
+            expect(res.body.blogPost).to.have.property('tags').and.be.an('array').and.have.length(NewBlogPost.tags.length).eql(NewBlogPost.tags);
+            expect(res.body.blogPost).to.have.property('date');
+            expect(res.body.blogPost).to.have.property('_id');          done();
+          });
+    });
+  });
+});
